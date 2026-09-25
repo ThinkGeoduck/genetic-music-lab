@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Genetic algorithm labs</title>
+<meta name="description" content="Two browser labs where a genetic algorithm solves a problem in front of you: reconstructing a piece of music, and finding its way through a maze.">
+<style>
+  :root{
+    --paper:#fff; --ink:#111; --ink-2:#4d5257; --hair:#111; --accent:#e63b1e;
+    --sans:"Hanken Grotesk",Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+            -webkit-font-smoothing:antialiased}
+  ::selection{background:var(--accent);color:#fff}
+  :focus-visible{outline:3px solid var(--ink);outline-offset:4px}
+  .sheet{max-width:1100px;margin:0 auto;padding:clamp(22px,4vh,48px) clamp(20px,5vw,96px) clamp(48px,8vh,96px)}
+  h1{margin:0;font-size:clamp(18px,1.4vw,24px);font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+     padding-bottom:14px;border-bottom:2px solid var(--hair)}
+  .lede{margin:clamp(28px,5vh,56px) 0 0;font-size:clamp(28px,4.4vw,64px);line-height:1.04;font-weight:800;
+        letter-spacing:-.03em;max-width:20ch;text-wrap:balance}
+  .lede em{font-style:normal;color:var(--accent)}
+  .sub{margin:22px 0 0;font-size:clamp(15px,1.15vw,20px);line-height:1.5;color:var(--ink-2);max-width:62ch}
+  ul{list-style:none;margin:clamp(34px,6vh,72px) 0 0;padding:0}
+  li{border-top:1px solid var(--hair)}
+  a.lab{display:flex;align-items:baseline;gap:clamp(14px,2vw,32px);flex-wrap:wrap;
+        padding:clamp(20px,3vh,34px) 0;color:inherit;text-decoration:none;transition:color .15s}
+  a.lab:hover{color:var(--accent)}
+  a.lab .n{font-size:clamp(26px,3vw,48px);font-weight:800;letter-spacing:-.02em;line-height:1}
+  a.lab .d{flex:1;min-width:16ch;font-size:clamp(14px,1vw,17px);line-height:1.5;color:var(--ink-2);max-width:56ch}
+  a.lab:hover .d{color:var(--ink)}
+  a.lab .go{font-size:clamp(13px,.95vw,16px);font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+            white-space:nowrap}
+  footer{margin-top:clamp(40px,7vh,84px);padding-top:16px;border-top:1px solid var(--hair);
+         font-size:13px;line-height:1.6;color:var(--ink-2)}
+  footer a{color:var(--ink);text-decoration-thickness:1px;text-underline-offset:.2em}
+</style>
+</head>
+<body>
+<div class="sheet">
+  <h1>Genetic algorithm labs</h1>
+
+  <p class="lede">Watch a population <em>solve something</em> it was never taught.</p>
+  <p class="sub">Two browser experiments in evolutionary computation. In both, nothing is designed and
+    nothing is copied — a population of random candidates is scored, the better ones become parents,
+    their genomes recombine and mutate, and the answer emerges from that alone.</p>
+
+  <ul>
+    <li><a class="lab" href="/ga/gml/">
+      <span class="n">Music</span>
+      <span class="d">Drop in a MIDI file. Four hundred random pieces are bred toward it while a sampled
+        grand piano plays the best candidate live, correcting itself as it goes.</span>
+      <span class="go">Open &rarr;</span>
+    </a></li>
+    <li><a class="lab" href="/ga/maze/">
+      <span class="n">Maze</span>
+      <span class="d">A population of agents carrying random movement instructions. No route is
+        programmed and no agent can see the walls.</span>
+      <span class="go">Open &rarr;</span>
+    </a></li>
+  </ul>
+
+  <footer>
+    Source on <a href="https://github.com/ThinkGeoduck/genetic-music-lab">GitHub</a>.
+    Piano samples: Salamander Grand Piano V3 by Alexander Holm, CC-BY 3.0.
+  </footer>
+</div>
+</body>
+</html>

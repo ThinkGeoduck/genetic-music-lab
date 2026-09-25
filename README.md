@@ -8,12 +8,15 @@ candidate pieces, and breeds them toward the target — selection, crossover, mu
 while a sampled grand piano plays the current best candidate live. The algorithm never sees the
 target. It only ever receives a number saying how close each candidate is.
 
-Open `genetic-music-lab.html` in a browser. There is no build step and no server required,
-though a local one avoids `file://` quirks:
+Open `ga/gml/index.html` in a browser. There is no build step and no server required, though a
+local one avoids `file://` quirks:
 
 ```bash
 python -m http.server 8731
+# then http://localhost:8731/ga/gml/
 ```
+
+Deployed as a static site (Vercel): `/ga/gml/` is the music lab, `/ga/maze/` the maze lab.
 
 ## How it works
 
@@ -37,10 +40,10 @@ nudged toward the answer except through its fitness score.
 
 ## The two labs
 
-- `genetic-music-lab.html` — the music lab described above, plus `genetic-music-lab-piano.js`
-  (the piano samples; keep the two files side by side).
-- `genetic-algorithm-lab.html` — an earlier, separate lab where a population of agents evolves
-  its way through a maze. Different visual world, same idea.
+- `ga/gml/` — the music lab described above. `index.html` plus `genetic-music-lab-piano.js`
+  (the piano samples); keep the two files side by side, the page loads the sidecar relatively.
+- `ga/maze/` — an earlier, separate lab where a population of agents evolves its way through a
+  maze. Different visual world, same idea.
 
 ## Credits
 
