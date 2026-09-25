@@ -1,0 +1,8 @@
+# local tooling
+.playwright/
+node_modules/
+
+# OneDrive / OS noise
+desktop.ini
+.DS_Store
+Thumbs.db

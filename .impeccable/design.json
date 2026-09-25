@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-18T00:00:00Z",
+  "title": "Design System: Genetic Music Lab",
+  "extensions": {
+    "colorMeta": {
+      "accent": { "role": "primary", "displayName": "Poster Vermilion", "canonical": "#e63b1e", "tonalRamp": ["oklch(20% 0.09 33)", "oklch(30% 0.13 33)", "oklch(40% 0.17 33)", "oklch(50% 0.20 33)", "oklch(60% 0.21 33)", "oklch(72% 0.16 33)", "oklch(85% 0.08 33)", "oklch(95% 0.03 33)"] },
+      "accent-pressed": { "role": "primary", "displayName": "Pressed Vermilion", "canonical": "#c42a10", "tonalRamp": ["oklch(18% 0.08 33)", "oklch(28% 0.12 33)", "oklch(38% 0.16 33)", "oklch(48% 0.19 33)", "oklch(58% 0.20 33)", "oklch(70% 0.15 33)", "oklch(84% 0.08 33)", "oklch(95% 0.03 33)"] },
+      "paper": { "role": "neutral", "displayName": "Paper", "canonical": "#ffffff", "tonalRamp": ["oklch(15% 0 0)", "oklch(27% 0 0)", "oklch(39% 0 0)", "oklch(51% 0 0)", "oklch(63% 0 0)", "oklch(75% 0 0)", "oklch(87% 0 0)", "oklch(100% 0 0)"] },
+      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "#111111", "tonalRamp": ["oklch(15% 0 0)", "oklch(27% 0 0)", "oklch(39% 0 0)", "oklch(51% 0 0)", "oklch(63% 0 0)", "oklch(75% 0 0)", "oklch(87% 0 0)", "oklch(95% 0 0)"] },
+      "ink-2": { "role": "neutral", "displayName": "Programme Grey", "canonical": "#4d5257", "tonalRamp": ["oklch(15% 0.008 240)", "oklch(27% 0.008 240)", "oklch(39% 0.008 240)", "oklch(51% 0.008 240)", "oklch(63% 0.008 240)", "oklch(75% 0.008 240)", "oklch(87% 0.008 240)", "oklch(95% 0.008 240)"] },
+      "faint": { "role": "neutral", "displayName": "Construction Grey", "canonical": "#e4e6e8", "tonalRamp": ["oklch(15% 0.004 240)", "oklch(27% 0.004 240)", "oklch(39% 0.004 240)", "oklch(51% 0.004 240)", "oklch(63% 0.004 240)", "oklch(75% 0.004 240)", "oklch(87% 0.004 240)", "oklch(95% 0.004 240)"] },
+      "ghost": { "role": "neutral", "displayName": "Ghost Grey", "canonical": "#9a9fa4", "tonalRamp": ["oklch(15% 0.006 240)", "oklch(27% 0.006 240)", "oklch(39% 0.006 240)", "oklch(51% 0.006 240)", "oklch(63% 0.006 240)", "oklch(75% 0.006 240)", "oklch(87% 0.006 240)", "oklch(95% 0.006 240)"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "The generation counter; sized by its column with container query units. Ink while running, vermilion when converged." },
+      "headline": { "displayName": "Headline", "purpose": "The drop field's instruction, white on vermilion, balanced to 12ch; also the canvas 'Target withheld' caption." },
+      "title": { "displayName": "Title", "purpose": "The primary command word (START / RUN IT AGAIN) in the command line, with a 4px rule." },
+      "body": { "displayName": "Body", "purpose": "Programme notes and parameter hints in Programme Grey, max 70ch." },
+      "label": { "displayName": "Label", "purpose": "Every typographic control, parameter name, and segmented option: uppercase, tracked 0.08em." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "control-state", "value": "color .15s, border-color .15s", "purpose": "Typographic control hover and active underline." },
+      { "name": "drop-hover", "value": "background .15s", "purpose": "Drop field hover and drag-over." },
+      { "name": "note-print", "value": "420ms, cubic ease-out (1 - (1-t)^3), vermilion to ink", "purpose": "The one authored motion: a candidate note prints black the moment it becomes exact. Instant under prefers-reduced-motion." }
+    ],
+    "breakpoints": [
+      { "name": "poster-stack", "value": "880px" },
+      { "name": "params-stack", "value": "700px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Typographic Control",
+      "kind": "button",
+      "refersTo": "control",
+      "description": "Every secondary command: an uppercase tracked word with a 3px rule reserved beneath it. Hover draws the rule in ink; the active state draws it in vermilion.",
+      "html": "<button class=\"ds-control\">Reset</button> <button class=\"ds-control ds-on\">Normal</button> <button class=\"ds-control ds-off\">Fast</button> <button class=\"ds-control\" disabled>Reveal the target</button>",
+      "css": ".ds-control { appearance: none; border: 0; background: none; margin: 0 24px 0 0; cursor: pointer; font-family: 'Hanken Grotesk', Helvetica, Arial, sans-serif; font-weight: 700; font-size: 16px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink, #111111); padding: .35em 0; border-bottom: 3px solid transparent; transition: color .15s, border-color .15s; } .ds-control:hover { border-bottom-color: var(--ink, #111111); } .ds-control:focus-visible { outline: 3px solid var(--ink, #111111); outline-offset: 4px; } .ds-control.ds-on { color: var(--ink, #111111); border-bottom-color: var(--accent, #e63b1e); } .ds-control.ds-off { color: var(--ink-2, #4d5257); } .ds-control.ds-off:hover { color: var(--ink, #111111); } .ds-control:disabled { color: var(--ghost, #9a9fa4); cursor: not-allowed; border-bottom-color: transparent; }"
+    },
+    {
+      "name": "Primary Command",
+      "kind": "button",
+      "refersTo": "command-primary",
+      "description": "The one poster-scale command (START / RUN IT AGAIN): vermilion word with a 4px rule; ink on hover and while the run is live.",
+      "html": "<button class=\"ds-command\">Start</button>",
+      "css": ".ds-command { appearance: none; border: 0; background: none; padding: .05em 0; cursor: pointer; font-family: 'Hanken Grotesk', Helvetica, Arial, sans-serif; font-weight: 700; font-size: clamp(30px, 3vw, 56px); line-height: 1; letter-spacing: .02em; text-transform: uppercase; color: var(--accent, #e63b1e); border-bottom: 4px solid transparent; transition: color .15s, border-color .15s; } .ds-command:hover { color: var(--ink, #111111); border-bottom-color: var(--ink, #111111); } .ds-command.ds-live { color: var(--ink, #111111); border-bottom-color: var(--accent, #e63b1e); } .ds-command:focus-visible { outline: 3px solid var(--ink, #111111); outline-offset: 4px; }"
+    },
+    {
+      "name": "Drop Field",
+      "kind": "custom",
+      "refersTo": "drop-field",
+      "description": "The start screen's solid vermilion plate: full-width, square, poster headline in paper, darkening one step on hover or drag-over.",
+      "html": "<button class=\"ds-drop\" type=\"button\"><b>Drop a MIDI file on this page.</b><span class=\"ds-drop-sub\">Or <u>choose a file</u>. Four hundred random pieces will be bred toward it.</span></button>",
+      "css": ".ds-drop { appearance: none; border: 0; display: flex; flex-direction: column; justify-content: space-between; gap: 24px; width: 100%; min-height: 320px; background: var(--accent, #e63b1e); color: #fff; text-align: left; padding: 40px 32px; cursor: pointer; font-family: 'Hanken Grotesk', Helvetica, Arial, sans-serif; border-radius: 0; transition: background .15s; } .ds-drop:hover { background: #c42a10; } .ds-drop:focus-visible { outline: 3px solid var(--ink, #111111); outline-offset: 4px; } .ds-drop b { display: block; font-size: clamp(44px, 7vw, 112px); line-height: .92; font-weight: 800; letter-spacing: -.03em; max-width: 12ch; text-wrap: balance; } .ds-drop-sub { font-size: 24px; line-height: 1.3; max-width: 34ch; font-weight: 700; } .ds-drop-sub u { text-decoration-thickness: 2px; text-underline-offset: .18em; }"
+    },
+    {
+      "name": "Range Parameter",
+      "kind": "input",
+      "refersTo": "slider-thumb",
+      "description": "A rule-topped parameter block: uppercase name, heavy value, a 2px ink track with an 18px square ink thumb that turns vermilion on hover, and a grey hint.",
+      "html": "<div class=\"ds-param\"><div class=\"ds-param-top\"><span>Population</span><span class=\"ds-param-val\">400</span></div><input class=\"ds-range\" type=\"range\" min=\"100\" max=\"800\" step=\"50\" value=\"400\" aria-label=\"Population\"><div class=\"ds-param-hint\">How many candidates compete each generation.</div></div>",
+      "css": ".ds-param { padding: 14px 0 0; border-top: 1px solid var(--ink, #111111); font-family: 'Hanken Grotesk', Helvetica, Arial, sans-serif; color: var(--ink, #111111); } .ds-param-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 16px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; } .ds-param-val { font-weight: 800; letter-spacing: 0; text-transform: none; font-variant-numeric: tabular-nums; } .ds-param-hint { margin-top: 8px; color: var(--ink-2, #4d5257); font-size: 15px; line-height: 1.45; max-width: 52ch; } .ds-range { -webkit-appearance: none; appearance: none; width: 100%; height: 2px; margin: 18px 0 6px; background: var(--ink, #111111); outline: none; cursor: pointer; } .ds-range::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 0; background: var(--ink, #111111); border: 0; transition: background .15s; } .ds-range::-webkit-slider-thumb:hover { background: var(--accent, #e63b1e); } .ds-range::-moz-range-thumb { width: 18px; height: 18px; border-radius: 0; background: var(--ink, #111111); border: 0; } .ds-range::-moz-range-track { height: 2px; background: var(--ink, #111111); } .ds-range:focus-visible { outline: 3px solid var(--ink, #111111); outline-offset: 8px; }"
+    },
+    {
+      "name": "Masthead",
+      "kind": "nav",
+      "refersTo": "control",
+      "description": "The programme heading: uppercase 800 title at left, typographic controls at right, a 2px rule beneath. Wraps by flex; no icons.",
+      "html": "<div class=\"ds-mast\"><h1 class=\"ds-mast-title\">Genetic Music Lab</h1><div class=\"ds-mast-grow\"></div><div class=\"ds-mast-links\"><button class=\"ds-mast-link\">Load MIDI</button><button class=\"ds-mast-link\">Use the example</button></div></div>",
+      "css": ".ds-mast { display: flex; align-items: baseline; gap: 24px; flex-wrap: wrap; padding-bottom: 14px; border-bottom: 2px solid var(--ink, #111111); font-family: 'Hanken Grotesk', Helvetica, Arial, sans-serif; color: var(--ink, #111111); } .ds-mast-title { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; } .ds-mast-grow { flex: 1; } .ds-mast-links { display: flex; gap: 28px; flex-wrap: wrap; } .ds-mast-link { appearance: none; border: 0; background: none; padding: .35em 0; cursor: pointer; font: inherit; font-weight: 700; font-size: 16px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink, #111111); border-bottom: 3px solid transparent; transition: border-color .15s; } .ds-mast-link:hover { border-bottom-color: var(--ink, #111111); } .ds-mast-link:focus-visible { outline: 3px solid var(--ink, #111111); outline-offset: 4px; }"
+    },
+    {
+      "name": "Generation Counter",
+      "kind": "custom",
+      "refersTo": "control",
+      "description": "The poster's dominant type: a container-sized 800-weight tabular number with a tracked grey unit beneath. Turns vermilion when the run converges.",
+      "html": "<div class=\"ds-count\"><div class=\"ds-count-n\">414</div><div class=\"ds-count-unit\">generations</div></div><div class=\"ds-count\"><div class=\"ds-count-n ds-done\">1610</div><div class=\"ds-count-unit\">generations</div></div>",
+      "css": ".ds-count { container-type: inline-size; min-width: 0; width: 100%; font-family: 'Hanken Grotesk', Helvetica, Arial, sans-serif; color: var(--ink, #111111); margin-bottom: 24px; } .ds-count-n { font-size: clamp(88px, 40cqw, 260px); line-height: .86; font-weight: 800; letter-spacing: -.05em; margin: -.04em 0 0 -.04em; font-variant-numeric: tabular-nums lining-nums; } .ds-count-n.ds-done { color: var(--accent, #e63b1e); } .ds-count-unit { margin-top: 14px; font-size: 16px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2, #4d5257); }"
+    },
+    {
+      "name": "Rule-Divided Section",
+      "kind": "card",
+      "refersTo": "control",
+      "description": "The system's only container: a 1px ink rule with 14px beneath, a bold caption, and content. No box, no background, no shadow.",
+      "html": "<div class=\"ds-section\"><div class=\"ds-section-lbl\">Best fitness by generation in red; the population average as the black line.</div><div class=\"ds-section-body\">Section content sits directly on the paper.</div></div>",
+      "css": ".ds-section { padding-top: 14px; border-top: 1px solid var(--ink, #111111); font-family: 'Hanken Grotesk', Helvetica, Arial, sans-serif; color: var(--ink, #111111); } .ds-section-lbl { font-size: 15px; font-weight: 700; letter-spacing: .02em; color: var(--ink-2, #4d5257); margin-bottom: 8px; } .ds-section-body { font-size: 16px; line-height: 1.5; max-width: 70ch; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Tonhalle Programme",
+    "overview": "The lab is a Zürich concert poster in the Müller-Brockmann manner, typeset live. A white sheet, one flat vermilion, and a heavy black grotesk at poster scale sit on a grid drawn only in hairline rules; the algorithm's progress is the poster being finished. Nothing is decorated: musical structure is carried by geometry (notes as flat bars, fitness as a ranked bar field), and hierarchy is carried by scale jumps rather than by weight of chrome. The page is meant to be projected and read from the back of a room, so every meaningful element is either enormous or uppercase and tracked.\n\nDensity is editorial rather than dashboard. There are no cards, stat tiles, shadows, gradients, or icons anywhere in the built page; sections are divided by 1px and 2px rules and by whitespace alone. Controls are words. The whole colour budget is spent on one hue, and that hue is reserved for the poster's geometry and its largest type: the withheld target is a solid vermilion field, wrong notes stay vermilion, the fitness bars are vermilion, the primary command is vermilion, and the finished generation count turns vermilion. Everything else is black on white with one mid-grey for secondary text.\n\nConfirmed rejections from the build: SaaS-dashboard cards and stat tiles, dark-and-neon, moody black rooms, playful or gimmicky ornament, icon glyphs, and any depth cue.",
+    "keyCharacteristics": [
+      "White ground, black ink, one flat vermilion; a single mid grey for secondary text and a construction grey for hairlines",
+      "One variable grotesk (Hanken Grotesk, self-hosted) at four scale jumps, from 14px labels to a 260px generation number",
+      "Rigid two-column poster grid (4fr / 8fr) with rule-divided sections; zero border radius everywhere, including slider thumbs",
+      "Controls are uppercase tracked words with a 3px rule under the active state (4px under the primary command)",
+      "Geometry carries data: flat bars for notes, a ranked vermilion bar field for fitness, a 1px hairline playhead",
+      "Tabular lining numerals across the whole document"
+    ],
+    "rules": [
+      { "name": "The One Colour Rule", "body": "Vermilion goes on geometry and on poster-scale type (the command word, the finished count, the hidden-target field). It never goes on body text, on dividing rules, on backgrounds behind copy, or on more than one control's underline per group.", "section": "colors" },
+      { "name": "The Ink Prints Rule", "body": "In the roll, vermilion means \"not yet right\" and black means \"set\". A bar changes from vermilion to black once, in 420ms, when a note becomes exact; nothing else in the page animates colour.", "section": "colors" },
+      { "name": "The Canvas Reads the Stylesheet Rule", "body": "Canvas drawing reads --ink, --ink-2, --faint, --accent, --paper from :root at layout time; no colour is hard-coded in script except the white caption on the vermilion field.", "section": "colors" },
+      { "name": "The Scale Jump Rule", "body": "Hierarchy is made by size, not by colour or weight alone. Adjacent levels differ by at least 2x; the counter is 10x the labels beside it.", "section": "typography" },
+      { "name": "The Tabular Numerals Rule", "body": "Every numeral on the page, in HTML or on canvas, is tabular and lining so the counter and the status line never reflow as they count.", "section": "typography" },
+      { "name": "The Rules Divide Rule", "body": "Sections are separated by horizontal rules and whitespace only. Heavy rules (2px) mark the masthead, the programme notes, and the error message; hairlines (1px) mark everything in between. No box ever encloses content.", "section": "layout" },
+      { "name": "The Flat Print Rule", "body": "Surfaces never lift. State is shown by colour (Ink / Programme Grey / Ghost Grey / Vermilion) and by rules under text, never by shadow, elevation, or background tint.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do set every control as an uppercase, tracked word (700, 0.08em) with a 3px bottom rule that turns vermilion when active; 4px under a Title-scale primary command.",
+      "Do divide with 1px Ink hairlines and 14px of padding beneath; use 2px only for the masthead, the notes, and error rules.",
+      "Do spend vermilion on geometry (bars, fields) and poster-scale type only; keep small text Ink or Programme Grey.",
+      "Do derive every gap from the gutter token (1x, 1.2x, 1.6x, 2x) and every outer margin from the margin token.",
+      "Do read canvas colours from the :root custom properties so drawn geometry and CSS never disagree.",
+      "Do keep numerals tabular and lining, and let the largest number size itself from its column with container query units.",
+      "Do keep radius at 0 on every element, including slider thumbs and canvas bars."
+    ],
+    "donts": [
+      "Don't add cards, panels, stat tiles, or any bordered or tinted box around content.",
+      "Don't use shadows, gradients, blurs, glows, or a dimmed modal scrim; the enlarged chart is an opaque Paper sheet.",
+      "Don't introduce icons or glyphs; the masthead, commands, and navigation are words.",
+      "Don't add a second hue or a tint of vermilion beyond the single pressed step used on the drop field's hover.",
+      "Don't animate anything except the 150ms control-state transitions and the one 420ms vermilion-to-ink print in the roll.",
+      "Don't put vermilion on body copy, hints, labels, or dividing rules."
+    ]
+  }
+}
