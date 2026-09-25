@@ -35,6 +35,12 @@ genes, mutation expressed as an expected number of gene changes per child, and 2
 engine in the source knows nothing about MIDI or music; it is handed a genome factory, operators
 and a scoring function.
 
+**Playback.** The sustain pedal is read from the file's own CC64 messages, so a pedalled passage
+holds the way the performer held it, and a note rings out as the recording does instead of being cut
+at its written length. Velocity layers keep their recorded loudness, so soft really is soft. The
+pedal and the tempo map belong to the piece, so the original and the candidates are played with
+both — the way they share the instrument.
+
 **Nothing is copied from the target.** Generation 1 is genuinely random, and no candidate is ever
 nudged toward the answer except through its fitness score.
 
@@ -48,8 +54,8 @@ nudged toward the answer except through its fitness score.
 ## Credits
 
 - **Piano samples** — Salamander Grand Piano V3 by Alexander Holm, licensed
-  [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/). 30 notes across 3 velocity layers,
-  trimmed and re-encoded for the web.
+  [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/). 30 notes across 5 velocity layers,
+  re-encoded for the web with tail lengths that follow the register.
 - **Typeface** — [Hanken Grotesk](https://fonts.google.com/specimen/Hanken+Grotesk) by Alfredo Marco
   Pradil, SIL Open Font License.
 - **Bundled example** — "Cornfield Chase" from *Interstellar*, composed by Hans Zimmer, included as

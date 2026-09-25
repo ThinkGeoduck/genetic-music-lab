@@ -375,6 +375,7 @@ function parseMidi(buffer){
   if (!ticksPerBeat || ticksPerBeat < 1) ticksPerBeat = 480;
 
   const tempos = [];
+  const pedal = [];
   let timeSig = null;
   const rawTracks = [];
   let truncated = false;
@@ -460,7 +461,10 @@ function parseMidi(buffer){
         programs.set(ch, dv.getUint8(p++));
       } else if (type === 0xd0){
         p++;
-      } else if (type === 0xa0 || type === 0xb0 || type === 0xe0){
+      } else if (type === 0xb0){
+        const num = dv.getUint8(p++), val = dv.getUint8(p++);
+        if (num === 64) pedal.push({ tick, down: val >= 64 });   /* sustain */
+      } else if (type === 0xa0 || type === 0xe0){
         p += 2;
       } else {
         p++;                                /* unknown: resynchronise */
@@ -486,6 +490,23 @@ function parseMidi(buffer){
     throw new MidiError(truncated
       ? 'This MIDI file appears to be truncated or corrupt — no complete track could be read.'
       : 'This MIDI file contains no tracks.');
+  }
+
+  /* Tempo map in beats. Most files hold one tempo; a file that changes tempo
+     plays at the right speed because playback reads secondsPerBeat per note. */
+  tempos.sort((a, b) => a.tick - b.tick);
+  const tempoMap = tempos.map(t => ({ beat: t.tick / ticksPerBeat, us: t.us }));
+  if (!tempoMap.length || tempoMap[0].beat > 0) tempoMap.unshift({ beat: 0, us: 500000 });
+
+  /* One pedal timeline for the whole file: the piano has one sustain pedal,
+     whichever channel sent the message. */
+  pedal.sort((a, b) => a.tick - b.tick);
+  const pedalMap = [];
+  for (const e of pedal){
+    const beat = e.tick / ticksPerBeat;
+    const last = pedalMap[pedalMap.length - 1];
+    if (last && last.down === e.down) continue;          /* collapse repeats */
+    pedalMap.push({ beat, down: e.down });
   }
 
   const us = tempos.length ? tempos[0].us : 500000;
@@ -523,7 +544,7 @@ function parseMidi(buffer){
   parts.sort((a, b) => b.notes.length - a.notes.length);
 
   return {
-    format, ntrks, ticksPerBeat, smpte, bpm, truncated,
+    format, ntrks, ticksPerBeat, smpte, bpm, truncated, tempoMap, pedalMap,
     timeSig: timeSig || { num: 4, den: 4 },
     tempoChanges: tempos.length,
     totalNotes: parts.reduce((s, x) => s + x.notes.length, 0),
@@ -599,10 +620,15 @@ function partToNotes(part, ticksPerBeat){
     return {
       beat: c.tick / ticksPerBeat,
       pitch: c.pitch,
+      /* genes: quantized, so an exact match is reachable */
       ioi: snapIoi(clamp(gap / ticksPerBeat, 0, 4)),
       len: snapDur(clamp(len, 0.125, 4)),
       dur: snapDur(clamp(len, 0.125, 4)),     /* kept for phrase detection */
-      vel: velOfLevel(levelOfVel(c.velocity))
+      vel: velOfLevel(levelOfVel(c.velocity)),
+      /* the performance as played, used only to play the original back */
+      rawIoi: gap / ticksPerBeat,
+      rawLen: len,
+      rawVel: c.velocity
     };
   });
 }
@@ -684,8 +710,14 @@ function notesWithinSeconds(notes, seconds, bpm){
 function buildTarget(notes, start, count){
   const slice = notes.slice(start, start + count);
   const t0 = slice.length ? slice[0].beat : 0;
-  const out = slice.map(x => ({ pitch: x.pitch, ioi: x.ioi, len: x.len, dur: x.dur, vel: x.vel, beat: x.beat - t0 }));
-  if (out.length) out[out.length - 1].ioi = out[out.length - 1].len;   /* last note: nothing follows */
+  const out = slice.map(x => ({
+    pitch: x.pitch, ioi: x.ioi, len: x.len, dur: x.dur, vel: x.vel, beat: x.beat - t0,
+    rawIoi: x.rawIoi, rawLen: x.rawLen, rawVel: x.rawVel
+  }));
+  if (out.length){                                     /* last note: nothing follows */
+    out[out.length - 1].ioi = out[out.length - 1].len;
+    out[out.length - 1].rawIoi = out[out.length - 1].rawLen;
+  }
   return out;
 }
 
@@ -6017,7 +6049,7 @@ const $ = id => document.getElementById(id);
 const S = {
   file: null, midi: null, parts: [], partIdx: 0,
   notes: [], phrases: [], phraseIdx: 0, len: 's60',
-  target: null, bpm: 120, pitchLo: 48, pitchHi: 84,
+  target: null, bpm: 120, pitchLo: 48, pitchHi: 84, sectionBeat: 0,
   ev: null, running: false, done: false, speed: 20, acc: 0,
   revealed: false, bestSeen: 0, stagnant: 0
 };
@@ -6099,6 +6131,7 @@ function buildTargetAndReset(){
   }
   const len = isTimePreset() ? ph.count : Math.min(S.len, ph.count, S.notes.length - ph.start);
   S.target = buildTarget(S.notes, ph.start, Math.min(S.notes.length - ph.start, Math.max(4, len)));
+  S.sectionBeat = S.notes[ph.start] ? S.notes[ph.start].beat : 0;
   setSmoothnessRef(S.target);
 
   const lo = Math.min.apply(null, S.target.map(t => t.pitch));
@@ -6175,7 +6208,14 @@ function reveal(){
 }
 
 /* ---------------- audio ----------------
-   A sampled grand piano (see PIANO_SAMPLES) with a light synthesised room.
+   A sampled grand piano with a light synthesised room.
+
+   Three things decide whether this sounds like a piano rather than a music
+   box. The samples keep their own recorded loudness, so a soft layer really
+   is soft. A note is never cut at its written length: it rings out as the
+   recording does, and the damper only falls when the key is released with
+   the sustain pedal up. The pedal comes from the file's own CC64 track, so
+   pedalled passages hold the way the performer held them.
 
    Live mode does not play a snapshot of the best candidate. It runs a
    just-in-time scheduler: every ~60 ms it books the next note or two, and
@@ -6183,7 +6223,7 @@ function reveal(){
    as evolution improves the melody, the very next note you hear is already
    the improved one — you hear the piece being corrected in real time.     */
 const A = { ctx: null, master: null, dry: null, wet: null,
-            buffers: {}, keys: [], ready: false,
+            buffers: {}, keys: [], layers: null, ready: false,
             nodes: [], oneShot: null, playing: null,
             liveOn: true, live: null, liveTimer: null };
 
@@ -6195,9 +6235,12 @@ function initAudio(){
     const c = A.ctx = new C();
 
     A.master = c.createGain();
-    A.master.gain.value = 0.85;
+    /* Measured on the example: peak 0.87, RMS -16.6 dBFS, no clipped samples,
+       with the dynamic range of the playing left intact. */
+    A.master.gain.value = 1.3;
     const comp = c.createDynamicsCompressor();
-    comp.threshold.value = -14; comp.ratio.value = 2.5; comp.release.value = 0.25;
+    comp.threshold.value = -16; comp.ratio.value = 6; comp.knee.value = 8;
+    comp.attack.value = 0.003; comp.release.value = 0.3;
     A.master.connect(comp);
     comp.connect(c.destination);
 
@@ -6216,36 +6259,21 @@ function initAudio(){
     A.wet.connect(conv);
     conv.connect(A.master);
 
-    /* Prefer the Salamander grand (sidecar file, 3 velocity layers); fall back
-       to the built-in single-layer piano if the sidecar is not next to the page.
-       Decoding works while the context is still suspended. */
+    /* Prefer the Salamander grand (sidecar file, several velocity layers); fall
+       back to the built-in single-layer piano if the sidecar is not next to the
+       page. Decoding works while the context is still suspended. */
     const sal = window.SALAMANDER && Object.keys(window.SALAMANDER).length ? window.SALAMANDER : null;
-    A.layers = sal ? [3, 7, 11] : null;
+    A.layers = sal ? (window.SALAMANDER_LAYERS || [2, 5, 8, 11, 14]) : null;
     const src = sal || PIANO_SAMPLES;
     const ids = Object.keys(src);
     A.keys = Array.from(new Set(ids.map(k => parseInt(k, 10)))).sort((x, y) => x - y);
     let pending = ids.length;
-    const normalise = buf => {                /* equal peak, so velocity alone sets loudness */
-      let peak = 0;
-      for (let ch = 0; ch < buf.numberOfChannels; ch++){
-        const d = buf.getChannelData(ch);
-        for (let i = 0; i < d.length; i += 4){ const a = d[i] < 0 ? -d[i] : d[i]; if (a > peak) peak = a; }
-      }
-      if (peak > 0.001 && peak < 0.95){
-        const g = 0.95 / peak;
-        for (let ch = 0; ch < buf.numberOfChannels; ch++){
-          const d = buf.getChannelData(ch);
-          for (let i = 0; i < d.length; i++) d[i] *= g;
-        }
-      }
-      return buf;
-    };
     ids.forEach(k => {
       const bin = atob(src[k]);
       const u = new Uint8Array(bin.length);
       for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
       const done = buf => {
-        if (buf) A.buffers[k] = normalise(buf);
+        if (buf) A.buffers[k] = buf;   /* recorded loudness left intact */
         if (--pending === 0) A.ready = true;
       };
       try {
@@ -6263,16 +6291,22 @@ function ensureAudio(){
   return true;
 }
 
-/* nearest sampled note, and for Salamander the velocity layer closest to v */
+/* Nearest sampled note, and the velocity layer whose recorded strength is
+   closest to v. Returns the layer's own nominal strength too, so the caller
+   can trim the gap between v and the layer rather than re-scaling the sample. */
 function nearestSample(midi, v){
   let best = -1, bd = 1e9;
   for (const k of A.keys){ const d = Math.abs(k - midi); if (d < bd){ bd = d; best = k; } }
   if (best < 0) return null;
-  if (!A.layers) return A.buffers[best] ? { base: best, buf: A.buffers[best] } : null;
-  const layer = v < 0.45 ? 3 : v < 0.75 ? 7 : 11;
-  for (const l of [layer, 7, 3, 11]){
+  if (!A.layers) return A.buffers[best] ? { base: best, buf: A.buffers[best], layerV: v } : null;
+
+  const L = A.layers, top = L[L.length - 1];
+  let pick = L[0], pd = 1e9;
+  for (const l of L){ const d = Math.abs(l / top - v); if (d < pd){ pd = d; pick = l; } }
+  const order = L.slice().sort((a, b) => Math.abs(a - pick) - Math.abs(b - pick));
+  for (const l of order){
     const buf = A.buffers[best + 'v' + l];
-    if (buf) return { base: best, buf };
+    if (buf) return { base: best, buf, layerV: l / top };
   }
   return null;
 }
@@ -6292,10 +6326,12 @@ function stopSound(){
   $('bTarget').classList.remove('playing');
 }
 
-/* one sampled note. vel is 0..1 already normalised against the passage. */
-function piano(midi, at, dur, vel){
+/* One sampled note. `vel` is 0..1. `damper` is when the damper falls, in
+   seconds on the audio clock — later than the written length whenever the
+   sustain pedal is still down. Until then the recording decays on its own. */
+function piano(midi, at, dur, vel, damper){
   const c = A.ctx;
-  const v = Math.max(0.08, Math.min(1, vel));
+  const v = Math.max(0.05, Math.min(1, vel));
   const hit = nearestSample(midi, v);
   if (!hit){ synthFallback(midi, at, dur, v); return; }
 
@@ -6303,19 +6339,23 @@ function piano(midi, at, dur, vel){
   src.buffer = hit.buf;
   src.playbackRate.value = Math.pow(2, (midi - hit.base) / 12);
 
-  const lp = c.createBiquadFilter();          /* soft notes are darker on a real piano */
-  lp.type = 'lowpass';
-  lp.frequency.value = A.layers ? 20000 : 1800 + 10000 * v * v;   /* real layers carry their own tone */
-  lp.Q.value = 0.4;
-
+  /* The layer already carries the right tone and loudness; only trim the
+     distance between the asked velocity and the layer's own strength. */
   const g = c.createGain();
-  const peak = 0.16 + 0.6 * v;
-  g.gain.setValueAtTime(peak, at);
-  g.gain.setValueAtTime(peak, at + dur);
-  g.gain.exponentialRampToValueAtTime(0.001, at + dur + 0.28);   /* key release */
+  const trim = A.layers ? Math.max(0.55, Math.min(1.35, 1 + (v - hit.layerV) * 0.9))
+                        : 0.25 + 0.75 * v;
+  g.gain.setValueAtTime(trim, at);
 
-  src.connect(lp); lp.connect(g); g.connect(A.dry); g.connect(A.wet);
-  const end = at + dur + 0.32;
+  const ring = src.buffer.duration / src.playbackRate.value;
+  const off = Math.max(at + 0.06, damper === undefined ? at + dur : damper);
+  let end = at + ring;
+  if (off < end){                       /* damper falls before the string dies */
+    g.gain.setValueAtTime(trim, off);
+    g.gain.exponentialRampToValueAtTime(0.0008, off + 0.3);
+    end = off + 0.34;
+  }
+
+  src.connect(g); g.connect(A.dry); g.connect(A.wet);
   src.start(at); src.stop(end);
   A.nodes.push({ n: src, end });
 }
@@ -6333,25 +6373,54 @@ function synthFallback(midi, at, dur, v){
   A.nodes.push({ n: o, end: at + dur + 0.25 });
 }
 
-function passMaxVel(){
-  let m = 1;
-  if (S.target) for (const t of S.target) if (t.vel > m) m = t.vel;
-  return m;
+/* Seconds per beat at a beat position, following the file's tempo map. */
+function beatDur(beatPos){
+  const map = S.midi && S.midi.tempoMap;
+  if (!map || !map.length) return 60 / (S.bpm || 120);
+  const at = (S.sectionBeat || 0) + beatPos;
+  let us = map[0].us;
+  for (const t of map){ if (t.beat <= at) us = t.us; else break; }
+  return us / 1000000;
 }
 
-/* schedule a fixed note list from `at`; returns its length */
+/* When does the damper fall for a note released at `offBeat`? While the
+   sustain pedal is down it does not: it waits for the next pedal lift.
+   The pedal belongs to the piece, so both the original and the candidates
+   are played with it, the way tempo and the instrument are shared. */
+function damperBeat(offBeat){
+  const map = S.midi && S.midi.pedalMap;
+  if (!map || !map.length) return offBeat;
+  const at = (S.sectionBeat || 0) + offBeat;
+  let down = false;
+  for (const e of map){ if (e.beat <= at) down = e.down; else break; }
+  if (!down) return offBeat;
+  for (const e of map){ if (e.beat > at && !e.down) return offBeat + (e.beat - at); }
+  return offBeat + 4;                 /* pedal never lifts again: let it ring */
+}
+
+/* Schedule a fixed note list from `at`; returns its length in seconds. */
 function scheduleNotes(notes, at){
-  const beat = 60 / (S.bpm || 120);
-  const maxV = passMaxVel();
-  let acc = 0;
+  let acc = 0, secs = 0;
   for (const n of notes){
-    piano(n.pitch, at + acc * beat, Math.max(0.1, n.len * beat * 0.95), 0.3 + 0.7 * (n.vel / maxV));
+    const d = beatDur(acc);
+    const off = damperBeat(acc + n.len);
+    piano(n.pitch, at + secs, Math.max(0.08, n.len * d), n.vel / 127,
+          at + secs + Math.max(0.08, (off - acc) * d));
     acc += n.ioi;
+    secs += n.ioi * d;
   }
-  return { seconds: acc * beat, beats: acc, beat };
+  return { seconds: secs, beats: acc, beat: beatDur(0) };
 }
 
-const targetNotes = () => S.target.map(t => ({ pitch: t.pitch, ioi: t.ioi, len: t.len, vel: t.vel }));
+/* The original is played as performed: unquantized timing and full velocity
+   resolution. The genes are quantized so the search has a reachable target;
+   that grid is the algorithm's problem, not the listener's. */
+const targetNotes = () => S.target.map(t => ({
+  pitch: t.pitch,
+  ioi: t.rawIoi !== undefined ? t.rawIoi : t.ioi,
+  len: t.rawLen !== undefined ? t.rawLen : t.len,
+  vel: t.rawVel !== undefined ? t.rawVel : t.vel
+}));
 const bestNotes = () => {
   const b = S.ev && S.ev.best;
   return b ? b.p.map((p, i) => ({ pitch: p, ioi: b.d[i], len: b.l[i], vel: b.v[i] })) : null;
@@ -6378,8 +6447,7 @@ function play(notes, lane, btn){
 function startLive(){
   if (!A.liveOn || !S.running || A.liveTimer) return;
   if (!ensureAudio()) return;
-  const beat = 60 / (S.bpm || 120);
-  A.live = { idx: 0, nextAt: A.ctx.currentTime + 0.15, beat, beatPos: 0 };
+  A.live = { idx: 0, nextAt: A.ctx.currentTime + 0.15, beat: beatDur(0), beatPos: 0 };
   A.playing = { lane: 'best', fixed: false };
   liveTick();
 }
@@ -6389,7 +6457,6 @@ function liveTick(){
   if (!A.liveOn || !S.running || !S.ev || !A.live) return;
   const L = A.live, best = S.ev.best, n = best.p.length;
   const now = A.ctx.currentTime;
-  const maxV = passMaxVel();
 
   if (A.nodes.length > 600) prune();
 
@@ -6402,10 +6469,14 @@ function liveTick(){
     }
     if (L.nextAt < now - 0.3){ L.nextAt = now + 0.05; }   /* fell behind (tab hidden): catch up */
     const i = L.idx;                         /* read the CURRENT best gene */
-    piano(best.p[i], L.nextAt, Math.max(0.1, best.l[i] * L.beat * 0.95), 0.3 + 0.7 * (best.v[i] / maxV));
+    const d = beatDur(L.beatPos);
+    const off = damperBeat(L.beatPos + best.l[i]);
+    piano(best.p[i], L.nextAt, Math.max(0.08, best.l[i] * d), best.v[i] / 127,
+          L.nextAt + Math.max(0.08, (off - L.beatPos) * d));
+    L.beat = d;
     L.lastIdx = i;
     L.lastAt = L.nextAt;
-    L.nextAt += best.d[i] * L.beat;          /* 0 for chord tones: next note lands on the same beat */
+    L.nextAt += best.d[i] * d;               /* 0 for chord tones: next note lands on the same beat */
     L.beatPos += best.d[i];
     L.idx++;
   }
